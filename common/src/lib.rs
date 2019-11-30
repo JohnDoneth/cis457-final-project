@@ -1,4 +1,6 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+
+mod tictactoe;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Lobby {

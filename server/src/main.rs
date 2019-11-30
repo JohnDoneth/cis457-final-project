@@ -20,6 +20,20 @@ fn list_games(state: State<AppState>) -> Json<Vec<Lobby>> {
     Json(state.lobbies.clone())
 }
 
+/// Get the status of the game
+/// 
+/// 
+#[get("/lobbies/:id")]
+fn game_status() {
+    
+}
+
+/// Join the game, get a player identifier UUID
+#[post("/lobbies/join")]
+fn join_game(state: State<AppState>) -> Json<Vec<Lobby>> {
+    Json(state.lobbies.clone())
+}
+
 fn main() {
     let state = AppState {
         lobbies: vec![Lobby {
