@@ -9,19 +9,13 @@ use rocket::State;
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Clone)]
-struct Lobby {
-    name: String,
-    players: usize,
-    max_players: usize,
-    game: String,
-}
+use common::Lobby;
 
 struct AppState {
     lobbies: Vec<Lobby>,
 }
 
-#[get("/games")]
+#[get("/lobbies")]
 fn list_games(state: State<AppState>) -> Json<Vec<Lobby>> {
     Json(state.lobbies.clone())
 }
@@ -33,6 +27,12 @@ fn main() {
             players: 0,
             max_players: 1,
             game: String::from("Tic Tac Toe"),
+        },
+        Lobby {
+            name: String::from("actually cool kids"),
+            players: 0,
+            max_players: 1,
+            game: String::from("EXTREME Tic Tac Toe"),
         }],
     };
 
