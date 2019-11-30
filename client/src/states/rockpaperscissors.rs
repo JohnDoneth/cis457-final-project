@@ -38,7 +38,15 @@ impl RockPaperScissors {
     }
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 impl State for RockPaperScissors {
+
+    async fn on_enter(&mut self) {
+        
+    }
+
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal
             .draw(|mut f| {
@@ -79,7 +87,7 @@ impl State for RockPaperScissors {
         io::stdout().flush().ok();
     }
 
-    fn on_event(&mut self, event: Event) -> Action {
+    async fn on_event(&mut self, event: Event) -> Action {
         match event {
             Event::Input(input) => match input {
                 Key::Char('\n') => {

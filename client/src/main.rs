@@ -24,26 +24,29 @@ use states::GameBrowser;
 use states::MainMenu;
 use states::TicTacToe;
 
-fn main() -> Result<(), failure::Error> {
+use tokio::prelude::*;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Terminal initialization
-    let stdout = io::stdout().into_raw_mode()?;
+    let stdout = io::stdout().into_raw_mode().unwrap();
     let stdout = MouseTerminal::from(stdout);
     let stdout = AlternateScreen::from(stdout);
     let backend = TermionBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-    terminal.hide_cursor()?;
+    let mut terminal = Terminal::new(backend).unwrap();
+    terminal.hide_cursor().unwrap();
 
     let events = Events::new();
 
     let mut state_manager = StateManager::new();
 
-    state_manager.push(Box::new(TicTacToe::new()));
+    state_manager.push(Box::new(GameBrowser::new())).await;
 
     // Input
     loop {
         state_manager.render(&mut terminal);
 
-        let event = events.next()?;
+        let event = events.next().unwrap();
 
         if let Event::Input(key) = event {
             if let Key::Char('q') = key {
@@ -51,7 +54,7 @@ fn main() -> Result<(), failure::Error> {
             }
         }
 
-        state_manager.on_event(event);
+        state_manager.on_event(event).await;
     }
 
     Ok(())

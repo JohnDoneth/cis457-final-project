@@ -15,6 +15,8 @@ use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::widgets::{Block, Borders, Row, Table, Widget};
 
+use common::Lobby;
+
 pub struct GameBrowser {
     items: Vec<Vec<String>>,
     selected: usize,
@@ -66,7 +68,34 @@ impl GameBrowser {
     }
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 impl State for GameBrowser {
+
+    async fn on_enter(&mut self) {
+        
+        // fetch games
+        let lobbies: Vec<Lobby> = reqwest::get("http://localhost:8000/lobbies")
+            .await.unwrap()
+            .json()
+            .await.unwrap();
+
+        //println!("body = {:?}", lobbies);
+
+        self.items.clear();
+
+        for lobby in lobbies {
+            self.items.push(vec![
+                format!("{}", lobby.name),
+                format!("{}", "127.0.0.1"),
+                format!("{}", lobby.game),
+                format!("({}/{})", lobby.players, lobby.max_players)
+            ])
+        }
+
+    }
+
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal
             .draw(|mut f| {
@@ -100,7 +129,7 @@ impl State for GameBrowser {
             .unwrap();
     }
 
-    fn on_event(&mut self, event: Event) -> Action {
+    async fn on_event(&mut self, event: Event) -> Action {
         match event {
             Event::Input(key) => match key {
                 Key::Down => {

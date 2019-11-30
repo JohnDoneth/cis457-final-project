@@ -26,8 +26,11 @@ impl StateManager {
         Self { states: vec![] }
     }
 
-    pub fn push(&mut self, state: Box<dyn State>) {
+    pub async fn push(&mut self, state: Box<dyn State>) {
         self.states.push(state);
+        if let Some(state) = self.current() {
+            state.on_enter().await;
+        }
     }
 
     pub fn pop(&mut self) {
@@ -44,20 +47,25 @@ impl StateManager {
         }
     }
 
-    pub fn on_event(&mut self, event: Event) {
+    pub async fn on_event(&mut self, event: Event) {
         if let Some(state) = self.current() {
-            match state.on_event(event) {
+            match state.on_event(event).await {
                 Action::None => {}
                 Action::PushState(new_state) => {
-                    self.push(new_state);
+                    self.push(new_state).await;
                 }
             }
         }
     }
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 pub trait State {
     fn render(&mut self, terminal: &mut Terminal<Backend>);
 
-    fn on_event(&mut self, event: Event) -> Action;
+    async fn on_event(&mut self, event: Event) -> Action;
+
+    async fn on_enter(&mut self);
 }

@@ -12,3 +12,7 @@ tui = { version = "0.7.0", features = ["termion"] }
 rand = "0.7.2"
 failure = "0.1.6"
 unicode-width = "0.1.6"
+async-trait = "0.1.19"
+tokio = "0.2.0-alpha.6"
+reqwest = { version = "0.10.0-alpha.2", features = ["json"] }
+common = { path = "../common" }
