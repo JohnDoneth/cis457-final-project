@@ -25,31 +25,37 @@ impl GameBrowser {
         Self {
             items: vec![
                 vec![
+                    String::from("Cool Kids Only"),
                     String::from("127.0.0.1"),
                     String::from("Rock Paper Scissors"),
                     String::from("(0/2)"),
                 ],
                 vec![
+                    String::from("Cool Kids Only"),
                     String::from("127.0.0.1"),
                     String::from("Rock Paper Scissors"),
                     String::from("(0/2)"),
                 ],
                 vec![
+                    String::from("Cool Kids Only"),
                     String::from("127.0.0.1"),
                     String::from("Rock Paper Scissors"),
                     String::from("(1/2)"),
                 ],
                 vec![
+                    String::from("Cool Kids Only"),
                     String::from("127.0.0.1"),
                     String::from("Tic Tac Toe"),
                     String::from("(0/2)"),
                 ],
                 vec![
+                    String::from("Cool Kids Only"),
                     String::from("127.0.0.1"),
                     String::from("Tic Tac Toe"),
                     String::from("(0/2)"),
                 ],
                 vec![
+                    String::from("Cool Kids Only"),
                     String::from("127.0.0.1"),
                     String::from("Tic Tac Toe"),
                     String::from("(0/2)"),
@@ -66,7 +72,7 @@ impl State for GameBrowser {
             .draw(|mut f| {
                 let selected_style = Style::default().fg(Color::Green).modifier(Modifier::BOLD);
                 let normal_style = Style::default().fg(Color::White);
-                let header = ["Server IP", "Game Type", "Players"];
+                let header = ["Lobby Name", "Server IP", "Game Type", "Players"];
                 let rows = self.items.iter().enumerate().map(|(i, item)| {
                     if i == self.selected {
                         Row::StyledData(item.into_iter(), selected_style)
@@ -80,12 +86,15 @@ impl State for GameBrowser {
                     .margin(1)
                     .split(f.size());
                 Table::new(header.into_iter(), rows)
+                    .header_style(Style::default().fg(Color::Blue))
                     .block(Block::default().borders(Borders::ALL).title("Game List"))
                     .widths(&[
-                        Constraint::Percentage(50),
-                        Constraint::Length(30),
-                        Constraint::Max(10),
+                        Constraint::Percentage(25),
+                        Constraint::Percentage(25),
+                        Constraint::Percentage(25),
+                        Constraint::Percentage(25),
                     ])
+                    .column_spacing(1)
                     .render(&mut f, rects[0]);
             })
             .unwrap();

@@ -11,3 +11,4 @@ termion = "1.5.3"
 tui = { version = "0.7.0", features = ["termion"] }
 rand = "0.7.2"
 failure = "0.1.6"
+unicode-width = "0.1.6"

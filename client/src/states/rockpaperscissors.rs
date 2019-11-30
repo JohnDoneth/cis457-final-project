@@ -20,7 +20,7 @@ use std::io::{self, Write};
 
 use termion::cursor::Goto;
 
-pub struct Connect {
+pub struct RockPaperScissors {
     address: String,
     /// Current value of the input box
     input: String,
@@ -28,7 +28,7 @@ pub struct Connect {
     messages: Vec<String>,
 }
 
-impl Connect {
+impl RockPaperScissors {
     pub fn new() -> Self {
         Self {
             address: String::new(),
@@ -38,7 +38,7 @@ impl Connect {
     }
 }
 
-impl State for Connect {
+impl State for RockPaperScissors {
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal
             .draw(|mut f| {

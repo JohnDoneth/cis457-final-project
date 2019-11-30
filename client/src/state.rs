@@ -46,7 +46,12 @@ impl StateManager {
 
     pub fn on_event(&mut self, event: Event) {
         if let Some(state) = self.current() {
-            state.on_event(event);
+            match state.on_event(event) {
+                Action::None => {}
+                Action::PushState(new_state) => {
+                    self.push(new_state);
+                }
+            }
         }
     }
 }

@@ -19,7 +19,10 @@ mod state;
 use state::StateManager;
 
 mod states;
+use states::Connect;
 use states::GameBrowser;
+use states::MainMenu;
+use states::TicTacToe;
 
 fn main() -> Result<(), failure::Error> {
     // Terminal initialization
@@ -34,7 +37,7 @@ fn main() -> Result<(), failure::Error> {
 
     let mut state_manager = StateManager::new();
 
-    state_manager.push(Box::new(GameBrowser::new()));
+    state_manager.push(Box::new(TicTacToe::new()));
 
     // Input
     loop {
