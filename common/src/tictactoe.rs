@@ -51,6 +51,16 @@ pub enum PlayerAction {
     },
 }
 
+/// An input action would result in an invalid or inconsistent game state.
+#[derive(Debug, Deserialize, Serialize)]
+pub enum InvalidAction {
+    StillWaitingForPlayers,
+    GameAlreadyInPlay,
+    PositionOutOfBounds,
+    AlreadyPlacedThere,
+    NotYourTurn,
+}
+
 fn check_win_condition(board: Board, tokens: &BiMap<Uuid, BoardCell>) -> Option<Uuid> {
     // check row victory
     for row in &board {
@@ -65,7 +75,7 @@ fn check_win_condition(board: Board, tokens: &BiMap<Uuid, BoardCell>) -> Option<
     None
 }
 
-pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
+pub fn process_input(input: PlayerAction, state: GameState) -> Result<GameState, InvalidAction> {
     match state {
         GameState::WaitingForPlayers { ref players } => {
             println!("can't move yet, waiting for player 2");
@@ -103,21 +113,19 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
                             waiting = p1;
                         }
 
-                        return GameState::WaitingForInput {
+                        Ok(GameState::WaitingForInput {
                             active_player,
                             waiting,
                             tokens,
 
                             board: [[None, None, None], [None, None, None], [None, None, None]],
-                        };
+                        })
                     } else {
-                        return GameState::WaitingForPlayers { players: players };
+                        Ok(GameState::WaitingForPlayers { players: players })
                     }
                 }
-                _ => println!("invalid action"),
+                _ => Err(InvalidAction::StillWaitingForPlayers),
             }
-
-            state
         }
         GameState::WaitingForInput {
             active_player,
@@ -128,17 +136,14 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
             match input {
                 PlayerAction::PlaceToken { player, position } => {
                     if active_player != player {
-                        println!("invalid action: not your turn");
-                        return state;
+                        return Err(InvalidAction::NotYourTurn);
                     }
 
                     if position.0 > 3 {
-                        println!("invalid action: invalid pos");
-                        return state;
+                        return Err(InvalidAction::PositionOutOfBounds);
                     }
                     if position.1 > 3 {
-                        println!("invalid action: invalid pos");
-                        return state;
+                        return Err(InvalidAction::PositionOutOfBounds);
                     }
 
                     let player_token = &tokens.get_by_left(&player).unwrap();
@@ -148,24 +153,21 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
                     // check for win condition
                     if let Some(winner) = check_win_condition(board, tokens) {
                         // Someone has won
-                        return GameState::GameOver { winner, board };
+                        Ok(GameState::GameOver { winner, board })
                     } else {
                         // Game is not over yet.
-                        GameState::WaitingForInput {
+                        Ok(GameState::WaitingForInput {
                             waiting: player,        // swap
                             active_player: waiting, // swap
                             tokens: tokens.clone(),
                             board: board,
-                        }
+                        })
                     }
                 }
-                _ => {
-                    println!("invalid action, game in play");
-                    state
-                }
+                _ => Err(InvalidAction::GameAlreadyInPlay),
             }
         }
-        GameState::GameOver { .. } => state,
+        GameState::GameOver { .. } => Ok(state),
     }
 }
 
