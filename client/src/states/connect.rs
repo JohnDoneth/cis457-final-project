@@ -42,10 +42,7 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl State for Connect {
-
-    async fn on_enter(&mut self) {
-
-    }
+    async fn on_enter(&mut self) {}
 
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal

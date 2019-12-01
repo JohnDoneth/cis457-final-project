@@ -69,31 +69,31 @@ impl GameBrowser {
 }
 
 use async_trait::async_trait;
+use std::collections::HashMap;
 
 #[async_trait]
 impl State for GameBrowser {
-
     async fn on_enter(&mut self) {
-        
         // fetch games
-        let lobbies: Vec<Lobby> = reqwest::get("http://localhost:8000/lobbies")
-            .await.unwrap()
-            .json()
-            .await.unwrap();
+        let lobbies: HashMap<String, Lobby> = surf::get("http://localhost:8000/lobbies")
+            .await
+            .unwrap()
+            .body_json()
+            .await
+            .unwrap();
 
         //println!("body = {:?}", lobbies);
 
         self.items.clear();
 
-        for lobby in lobbies {
+        for (name, lobby) in lobbies {
             self.items.push(vec![
                 format!("{}", lobby.name),
                 format!("{}", "127.0.0.1"),
-                format!("{}", lobby.game),
-                format!("({}/{})", lobby.players, lobby.max_players)
+                format!("{}", "TicTacToe"), // #TODO!
+                format!("({}/{})", lobby.players, lobby.max_players),
             ])
         }
-
     }
 
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
@@ -143,6 +143,22 @@ impl State for GameBrowser {
                         self.selected -= 1;
                     } else {
                         self.selected = self.items.len() - 1;
+                    }
+                }
+                Key::Char('\n') => {
+                    if !self.items.is_empty() {
+                        let lobby = "lobby1";
+
+                        let url = format!("http://localhost:8000/lobbies/{}/join", lobby);
+
+                        let res: Result<common::JoinResponse, _> =
+                            surf::post(url).await.unwrap().body_json().await;
+
+                        if let Ok(res) = res {
+                            use crate::states::TicTacToe;
+
+                            return Action::PushState(Box::new(TicTacToe::new(res.player)));
+                        }
                     }
                 }
                 _ => {}

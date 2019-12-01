@@ -23,11 +23,14 @@ use states::Connect;
 use states::GameBrowser;
 use states::MainMenu;
 use states::TicTacToe;
+use std::panic::{self, PanicInfo};
 
-use tokio::prelude::*;
-
-#[tokio::main]
+#[async_std::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    panic::set_hook(Box::new(|info| {
+        panic_hook(info);
+    }));
+
     // Terminal initialization
     let stdout = io::stdout().into_raw_mode().unwrap();
     let stdout = MouseTerminal::from(stdout);
@@ -58,4 +61,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn panic_hook(info: &PanicInfo<'_>) {
+    let location = info.location().unwrap(); // The current implementation always returns Some
+
+    let msg = match info.payload().downcast_ref::<&'static str>() {
+        Some(s) => *s,
+        None => match info.payload().downcast_ref::<String>() {
+            Some(s) => &s[..],
+            None => "Box<Any>",
+        },
+    };
+    println!(
+        "{}thread '<unnamed>' panicked at '{}', {}\r",
+        termion::screen::ToMainScreen,
+        msg,
+        location
+    );
 }

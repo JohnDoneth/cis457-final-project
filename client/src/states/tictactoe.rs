@@ -26,24 +26,25 @@ use std::io::{self, Write};
 
 use termion::cursor::Goto;
 
-#[derive(PartialEq, Copy, Clone)]
-enum BoardCell {
-    Circle,
-    Square,
-}
+use uuid::Uuid;
+
+use common::tictactoe::Board;
+use common::tictactoe::BoardCell;
 
 pub struct TicTacToe {
-    board: [[Option<BoardCell>; 3]; 3],
+    board: Board,
     player_token: BoardCell,
     selection: (i16, i16),
+    player: Uuid,
 }
 
 impl TicTacToe {
-    pub fn new() -> Self {
+    pub fn new(player: Uuid) -> Self {
         Self {
             board: [[None, None, None], [None, None, None], [None, None, None]],
-            player_token: BoardCell::Circle,
+            player_token: BoardCell::X,
             selection: (0, 0),
+            player,
         }
     }
 }
@@ -52,10 +53,7 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl State for TicTacToe {
-
-    async fn on_enter(&mut self) {
-        
-    }
+    async fn on_enter(&mut self) {}
 
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal
@@ -88,8 +86,66 @@ impl State for TicTacToe {
 
                         ctx.layer();
 
-                        // draw tokens
-                        // #TODO DRAW PLAYER TOKENS
+                        // draw board tokens
+                        let margin = 8;
+                        let half_margin = margin / 2;
+
+                        for x in 0..3u16 {
+                            for y in 0..3u16 {
+                                match self.board[x as usize][y as usize] {
+                                    Some(BoardCell::Circle) => {
+                                        let rect = Rect {
+                                            x: (x * 25) + 1,
+                                            y: (y * 25) + 1,
+                                            width: 25,
+                                            height: 25,
+                                        };
+
+                                        ctx.draw(&Rectangle {
+                                            rect: Rect {
+                                                x: rect.x + half_margin,
+                                                y: rect.y + half_margin,
+                                                width: 25 - margin,
+                                                height: 25 - margin,
+                                            },
+                                            color: Color::White,
+                                        });
+                                    }
+                                    Some(BoardCell::X) => {
+                                        let rect = Rect {
+                                            x: (x * 25) + 1,
+                                            y: (y * 25) + 1,
+                                            width: 25,
+                                            height: 25,
+                                        };
+
+                                        let rect = Rect {
+                                            x: rect.x + half_margin,
+                                            y: rect.y + half_margin,
+                                            width: 25 - margin,
+                                            height: 25 - margin,
+                                        };
+
+                                        ctx.draw(&Line {
+                                            x1: rect.x as f64,
+                                            y1: rect.y as f64,
+                                            x2: (rect.x + rect.width) as f64,
+                                            y2: (rect.y + rect.height) as f64,
+                                            color: Color::White,
+                                        });
+
+                                        ctx.draw(&Line {
+                                            x1: rect.x as f64,
+                                            y1: (rect.y + rect.height) as f64,
+                                            x2: (rect.x + rect.width) as f64,
+                                            y2: rect.y as f64,
+                                            color: Color::White,
+                                        });
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
 
                         // draw selection
 

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 pub mod tictactoe;
 
@@ -14,4 +15,9 @@ pub struct Lobby {
     pub players: usize,
     pub max_players: usize,
     pub game: Game,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JoinResponse {
+    pub player: Uuid,
 }

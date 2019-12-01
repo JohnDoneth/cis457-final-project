@@ -54,6 +54,7 @@ pub enum PlayerAction {
 /// An input action would result in an invalid or inconsistent game state.
 #[derive(Debug, Deserialize, Serialize)]
 pub enum InvalidAction {
+    CantJoinTwice,
     StillWaitingForPlayers,
     GameAlreadyInPlay,
     PositionOutOfBounds,
@@ -82,6 +83,10 @@ pub fn process_input(input: PlayerAction, state: GameState) -> Result<GameState,
             match input {
                 PlayerAction::Join { player } => {
                     let mut players = players.clone();
+
+                    if players.contains(&player) {
+                        return Err(InvalidAction::CantJoinTwice);
+                    }
 
                     players.push(player);
 
@@ -144,6 +149,10 @@ pub fn process_input(input: PlayerAction, state: GameState) -> Result<GameState,
                     }
                     if position.1 > 3 {
                         return Err(InvalidAction::PositionOutOfBounds);
+                    }
+
+                    if board[position.0][position.1] != None {
+                        return Err(InvalidAction::AlreadyPlacedThere);
                     }
 
                     let player_token = &tokens.get_by_left(&player).unwrap();
