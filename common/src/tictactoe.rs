@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use bimap::BiMap;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
@@ -30,13 +30,18 @@ pub enum GameState {
     },
     GameOver {
         winner: Uuid,
-        loser: Uuid,
         board: Board,
     },
 }
 
+impl Default for GameState {
+    fn default() -> Self {
+        GameState::WaitingForPlayers { players: vec![] }
+    }
+}
+
 #[derive(Debug)]
-enum PlayerAction {
+pub enum PlayerAction {
     Join {
         player: Uuid,
     },
@@ -46,14 +51,14 @@ enum PlayerAction {
     },
 }
 
-fn checkWinCondition(board: Board, tokens: &BiMap<Uuid, BoardCell>) -> Option<Uuid> {
+fn check_win_condition(board: Board, tokens: &BiMap<Uuid, BoardCell>) -> Option<Uuid> {
     // check row victory
-    for row in board {
+    for row in &board {
         if row[0] == Some(BoardCell::X)
             && row[1] == Some(BoardCell::X)
             && row[2] == Some(BoardCell::X)
         {
-            return Some(tokens.get_by_right(BoardCell::X))
+            return Some(*tokens.get_by_right(&BoardCell::X).unwrap());
         }
     }
 
@@ -76,7 +81,7 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
 
                         let mut tokens = BiMap::new();
 
-                        let mut active_player: Uuid;
+                        let active_player: Uuid;
                         let mut waiting: Uuid;
 
                         // randomly assign tokens
@@ -136,22 +141,22 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
                         return state;
                     }
 
-                    let player_token = &tokens.get_by_left(player);
+                    let player_token = &tokens.get_by_left(&player).unwrap();
 
-                    board[position.0][position.1] = Some(player_token.clone());
+                    board[position.0][position.1] = Some(*player_token.clone());
 
                     // check for win condition
-
-                    if let Some(winner) = checkWinCondition(board, tokens) {
-                        println!("winner");
-                        return state;
-                    }
-
-                    GameState::WaitingForInput {
-                        waiting: player,        // swap
-                        active_player: waiting, // swap
-                        tokens: tokens.clone(),
-                        board: board,
+                    if let Some(winner) = check_win_condition(board, tokens) {
+                        // Someone has won
+                        return GameState::GameOver { winner, board };
+                    } else {
+                        // Game is not over yet.
+                        GameState::WaitingForInput {
+                            waiting: player,        // swap
+                            active_player: waiting, // swap
+                            tokens: tokens.clone(),
+                            board: board,
+                        }
                     }
                 }
                 _ => {
@@ -224,6 +229,4 @@ fn test_gameplay() {
     );
 
     println!("{:?}", s);
-
-    // s = process_input(PlayerAction::JoinLobby(p1));
 }
