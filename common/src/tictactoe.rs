@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, Eq, PartialEq)]
-enum BoardCell {
+pub enum BoardCell {
     Circle,
     X,
 }
@@ -40,7 +40,7 @@ impl Default for GameState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub enum PlayerAction {
     Join {
         player: Uuid,
@@ -82,7 +82,7 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
                         let mut tokens = BiMap::new();
 
                         let active_player: Uuid;
-                        let mut waiting: Uuid;
+                        let waiting: Uuid;
 
                         // randomly assign tokens
                         if rand::random() {
@@ -132,11 +132,11 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
                         return state;
                     }
 
-                    if position.0 > 3 || position.0 < 0 {
+                    if position.0 > 3 {
                         println!("invalid action: invalid pos");
                         return state;
                     }
-                    if position.1 > 3 || position.1 < 0 {
+                    if position.1 > 3 {
                         println!("invalid action: invalid pos");
                         return state;
                     }
@@ -171,8 +171,6 @@ pub fn process_input(input: PlayerAction, state: GameState) -> GameState {
 
 #[test]
 fn test_gameplay() {
-    use super::*;
-
     let p1 = Uuid::new_v4();
     let p2 = Uuid::new_v4();
 

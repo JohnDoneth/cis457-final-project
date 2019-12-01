@@ -4,54 +4,87 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket_contrib::json::{Json, JsonValue};
 use rocket::State;
+use rocket_contrib::json::{Json, JsonValue};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
+use uuid::Uuid;
+
+use common::Game;
 use common::Lobby;
+use common::tictactoe::PlayerAction;
+
+use std::collections::HashMap;
 
 struct AppState {
-    lobbies: Vec<Lobby>,
+    lobbies: HashMap<String, Lobby>,
 }
 
 #[get("/lobbies")]
 fn list_games(state: State<AppState>) -> Json<Vec<Lobby>> {
-    Json(state.lobbies.clone())
+    unimplemented!()
 }
 
 /// Get the status of the game
-/// 
-/// 
+///
+///
 #[get("/lobbies/:id")]
-fn game_status() {
-    
+fn game_status() {}
+
+#[derive(Serialize, Deserialize)]
+struct JoinResponse {
+    player_id: Uuid,
 }
 
 /// Join the game, get a player identifier UUID
-#[post("/lobbies/join")]
-fn join_game(state: State<AppState>) -> Json<Vec<Lobby>> {
-    Json(state.lobbies.clone())
+#[post("/lobbies/<lobby>/join")]
+fn join_game(lobby: String, state: State<AppState>) -> Json<JoinResponse> {
+    
+    unimplemented!()
+    
+    //Json(state.lobbies.clone())
+}
+
+/// Join the game, get a player identifier UUID
+#[post("/lobbies/<lobby>/action", data = "<body>")]
+fn perform_action(lobby: String, body: Json<PlayerAction>, state: State<AppState>) -> Json<Game> {
+    unimplemented!()
+}
+
+/// Join the game, get a player identifier UUID
+#[get("/lobbies/<lobby>/state")]
+fn get_state(lobby: String, state: State<AppState>) -> Json<Game> {
+    unimplemented!()
 }
 
 fn main() {
-    let state = AppState {
-        lobbies: vec![Lobby {
+    let mut lobbies = HashMap::new();
+
+    lobbies.insert(
+        String::from("cool kids only"),
+        Lobby {
             name: String::from("cool kids only"),
             players: 0,
             max_players: 1,
-            game: String::from("Tic Tac Toe"),
+            game: Game::TicTacToe(common::tictactoe::GameState::default()),
         },
+    );
+
+    lobbies.insert(
+        String::from("actually cool kids"),
         Lobby {
             name: String::from("actually cool kids"),
             players: 0,
             max_players: 1,
-            game: String::from("EXTREME Tic Tac Toe"),
-        }],
-    };
+            game: Game::RockPaperScissors,
+        },
+    );
 
     rocket::ignite()
-        .manage(state)
+        .manage(AppState {
+            lobbies
+        })
         .mount("/", routes![list_games])
         .launch();
 }
