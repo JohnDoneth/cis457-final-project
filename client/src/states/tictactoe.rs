@@ -30,21 +30,87 @@ use uuid::Uuid;
 
 use common::tictactoe::Board;
 use common::tictactoe::BoardCell;
+use common::tictactoe::GameState;
+use common::Game;
 
 pub struct TicTacToe {
     board: Board,
     player_token: BoardCell,
     selection: (i16, i16),
     player: Uuid,
+    lobby: String,
+    state: GameState,
+    status: String,
 }
 
 impl TicTacToe {
-    pub fn new(player: Uuid) -> Self {
+    pub fn new(player: Uuid, lobby: &str) -> Self {
         Self {
             board: [[None, None, None], [None, None, None], [None, None, None]],
             player_token: BoardCell::X,
             selection: (0, 0),
             player,
+            lobby: lobby.to_owned(),
+            state: GameState::default(),
+            status: String::from("waiting"),
+        }
+    }
+
+    pub async fn fetch_state(&mut self) {
+        // fetch the game state
+        let url = format!("http://localhost:8000/lobbies/{}/state", self.lobby);
+
+        let game: Game = surf::get(url).await.unwrap().body_json().await.unwrap();
+
+        match game {
+            Game::TicTacToe(s) => {
+                self.state = s;
+            }
+            _ => panic!("wrong game type"),
+        }
+
+        self.update()
+    }
+
+    pub fn update(&mut self) {
+        match self.state {
+            GameState::WaitingForPlayers { .. } => {
+                self.status = format!("Waiting for another player");
+            }
+            GameState::WaitingForInput {
+                active_player,
+                board,
+                ref tokens,
+                ..
+            } => {
+                self.board = board;
+
+                self.player_token = *tokens.clone().get_by_left(&self.player).unwrap();
+
+                if self.player == active_player {
+                    self.status = format!("It's your turn");
+                } else {
+                    self.status = format!("Waiting for the other play to make their move.")
+                }
+            }
+            GameState::GameOver { winner, board } => {
+                self.board = board;
+
+                match winner {
+                    Some(winner) => {
+                        if self.player == winner {
+                            self.status = format!("The game is over, you've won!");
+                        } else {
+                            self.status = format!("The game is over, you've lost.");
+                        }
+                    },
+                    None => {
+                        self.status = format!("The game is over, it was a tie.");
+                    }
+                }
+
+                
+            }
         }
     }
 }
@@ -53,16 +119,24 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl State for TicTacToe {
-    async fn on_enter(&mut self) {}
+    async fn on_enter(&mut self) {
+        self.fetch_state().await;
+    }
+
+    async fn on_update(&mut self) {
+        self.fetch_state().await;
+    }
 
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal
             .draw(|mut f| {
                 let chunks = Layout::default()
-                    .direction(Direction::Horizontal)
-                    .constraints([Constraint::Percentage(100)].as_ref())
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(3), Constraint::Percentage(100)].as_ref())
                     .margin(1)
                     .split(f.size());
+
+                Paragraph::new([Text::raw(self.status.clone())].iter()).render(&mut f, chunks[0]);
 
                 Canvas::default()
                     .block(Block::default().title("Tic-Tac-Toe").borders(Borders::ALL))
@@ -175,7 +249,7 @@ impl State for TicTacToe {
                             color: color,
                         });
                     })
-                    .render(&mut f, chunks[0]);
+                    .render(&mut f, chunks[1]);
             })
             .unwrap();
     }
@@ -224,7 +298,32 @@ impl State for TicTacToe {
                     let x = x as usize;
                     let y = y as usize;
 
-                    self.board[x][y] = Some(self.player_token);
+                    use common::tictactoe::GameState;
+
+                    //self.board[x][y] = Some(self.player_token);
+                    let url = format!("http://localhost:8000/lobbies/{}/action", self.lobby);
+
+                    let res: serde_json::Value = surf::post(url)
+                        .body_json(&common::tictactoe::PlayerAction::PlaceToken {
+                            player: self.player,
+                            position: (x, y),
+                        })
+                        .unwrap()
+                        .await
+                        .unwrap()
+                        .body_json()
+                        .await
+                        .unwrap();
+
+                    if let Ok(new_state) = serde_json::from_value::<Game>(res) {
+                        match new_state {
+                            Game::TicTacToe(new_state) => {
+                                self.state = new_state;
+                                self.update();
+                            }
+                            _ => panic!("wrong game type"),
+                        }
+                    }
                 }
                 _ => {}
             },

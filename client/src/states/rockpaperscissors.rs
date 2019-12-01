@@ -44,6 +44,8 @@ use async_trait::async_trait;
 impl State for RockPaperScissors {
     async fn on_enter(&mut self) {}
 
+    async fn on_update(&mut self) {}
+
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal
             .draw(|mut f| {

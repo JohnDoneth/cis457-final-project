@@ -73,6 +73,8 @@ use std::collections::HashMap;
 
 #[async_trait]
 impl State for GameBrowser {
+    async fn on_update(&mut self) {}
+
     async fn on_enter(&mut self) {
         // fetch games
         let lobbies: HashMap<String, Lobby> = surf::get("http://localhost:8000/lobbies")
@@ -86,7 +88,7 @@ impl State for GameBrowser {
 
         self.items.clear();
 
-        for (name, lobby) in lobbies {
+        for (_, lobby) in lobbies {
             self.items.push(vec![
                 format!("{}", lobby.name),
                 format!("{}", "127.0.0.1"),
@@ -99,7 +101,9 @@ impl State for GameBrowser {
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
         terminal
             .draw(|mut f| {
-                let selected_style = Style::default().fg(Color::Green).modifier(Modifier::BOLD);
+                let selected_style = Style::default()
+                    .fg(Color::Green)
+                    .modifier(Modifier::UNDERLINED);
                 let normal_style = Style::default().fg(Color::White);
                 let header = ["Lobby Name", "Server IP", "Game Type", "Players"];
                 let rows = self.items.iter().enumerate().map(|(i, item)| {
@@ -147,7 +151,7 @@ impl State for GameBrowser {
                 }
                 Key::Char('\n') => {
                     if !self.items.is_empty() {
-                        let lobby = "lobby1";
+                        let lobby = &self.items[self.selected][0];
 
                         let url = format!("http://localhost:8000/lobbies/{}/join", lobby);
 
@@ -157,7 +161,7 @@ impl State for GameBrowser {
                         if let Ok(res) = res {
                             use crate::states::TicTacToe;
 
-                            return Action::PushState(Box::new(TicTacToe::new(res.player)));
+                            return Action::PushState(Box::new(TicTacToe::new(res.player, lobby)));
                         }
                     }
                 }

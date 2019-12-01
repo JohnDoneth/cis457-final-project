@@ -20,18 +20,20 @@ use std::io::{self, Write};
 
 use termion::cursor::Goto;
 
+use crate::states::CreateGame;
 use crate::states::GameBrowser;
-
 pub struct MainMenu {
     selected: usize,
     items: Vec<String>,
+    address: String,
 }
 
 impl MainMenu {
-    pub fn new() -> Self {
+    pub fn new(server_address: &str) -> Self {
         Self {
             selected: 0,
             items: vec![String::from("Create a game"), String::from("Join a game")],
+            address: server_address.to_owned(),
         }
     }
 }
@@ -40,6 +42,8 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl State for MainMenu {
+    async fn on_update(&mut self) {}
+
     async fn on_enter(&mut self) {}
 
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
@@ -92,7 +96,12 @@ impl State for MainMenu {
                     };
                 }
                 Key::Char('\n') => {
-                    return Action::PushState(Box::new(GameBrowser::new()));
+                    if self.selected == 0 {
+                        return Action::PushState(Box::new(CreateGame::new()));
+                    }
+                    if self.selected == 1 {
+                        return Action::PushState(Box::new(GameBrowser::new()));
+                    }
                 }
                 _ => {}
             },

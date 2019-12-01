@@ -1,4 +1,6 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+
 mod util;
 
 use std::io;
@@ -20,6 +22,7 @@ use state::StateManager;
 
 mod states;
 use states::Connect;
+use states::CreateGame;
 use states::GameBrowser;
 use states::MainMenu;
 use states::TicTacToe;
@@ -43,21 +46,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut state_manager = StateManager::new();
 
-    state_manager.push(Box::new(GameBrowser::new())).await;
+    //state_manager.push(Box::new(GameBrowser::new())).await;
+    state_manager
+        .push(Box::new(MainMenu::new("localhost:8000")))
+        .await;
 
     // Input
     loop {
         state_manager.render(&mut terminal);
 
-        let event = events.next().unwrap();
-
-        if let Event::Input(key) = event {
-            if let Key::Char('q') = key {
-                break;
+        if let Ok(event) = events.next() {
+            if let Event::Input(key) = event {
+                if let Key::Char('q') = key {
+                    break;
+                }
             }
-        }
 
-        state_manager.on_event(event).await;
+            state_manager.update().await;
+
+            state_manager.on_event(event).await;
+        }
+        
     }
 
     Ok(())

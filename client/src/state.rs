@@ -18,7 +18,7 @@ pub enum Action {
 }
 
 pub struct StateManager {
-    states: Vec<Box<State>>,
+    states: Vec<Box<dyn State>>,
 }
 
 impl StateManager {
@@ -47,6 +47,12 @@ impl StateManager {
         }
     }
 
+    pub async fn update(&mut self) {
+        if let Some(state) = self.current() {
+            state.on_update().await;
+        }
+    }
+
     pub async fn on_event(&mut self, event: Event) {
         if let Some(state) = self.current() {
             match state.on_event(event).await {
@@ -68,4 +74,6 @@ pub trait State {
     async fn on_event(&mut self, event: Event) -> Action;
 
     async fn on_enter(&mut self);
+
+    async fn on_update(&mut self);
 }

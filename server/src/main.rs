@@ -14,7 +14,9 @@ use serde_json::json;
 use uuid::Uuid;
 
 use common::tictactoe::PlayerAction;
+use common::CreateLobbyRequest;
 use common::Game;
+use common::GameType;
 use common::Lobby;
 
 use parking_lot::Mutex;
@@ -91,6 +93,24 @@ fn get_state(lobby: String, state: State<AppState>) -> JsonValue {
     JsonValue(res)
 }
 
+/// Get the status of the game
+///
+///
+#[post("/lobbies", data = "<lobby>")]
+fn create_lobby(lobby: Json<CreateLobbyRequest>, state: State<AppState>) -> JsonValue {
+    state.lobbies.lock().insert(
+        lobby.0.name.clone(),
+        Lobby {
+            name: lobby.0.name.clone(),
+            players: 0,
+            max_players: 2,
+            game: Game::from(lobby.0.game),
+        },
+    );
+
+    JsonValue(json!({}))
+}
+
 fn main() {
     println!(
         "{}",
@@ -129,7 +149,13 @@ fn main() {
         })
         .mount(
             "/",
-            routes![list_games, join_game, get_state, perform_action],
+            routes![
+                list_games,
+                join_game,
+                get_state,
+                perform_action,
+                create_lobby
+            ],
         )
         .launch();
 }

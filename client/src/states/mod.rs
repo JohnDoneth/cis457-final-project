@@ -1,10 +1,12 @@
 mod connect;
+mod create_game;
 mod game_browser;
 mod mainmenu;
 mod rockpaperscissors;
 mod tictactoe;
 
 pub use connect::Connect;
+pub use create_game::CreateGame;
 pub use game_browser::GameBrowser;
 pub use mainmenu::MainMenu;
 pub use rockpaperscissors::RockPaperScissors;

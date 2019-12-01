@@ -29,7 +29,7 @@ pub enum GameState {
         board: Board,
     },
     GameOver {
-        winner: Uuid,
+        winner: Option<Uuid>,
         board: Board,
     },
 }
@@ -62,14 +62,26 @@ pub enum InvalidAction {
     NotYourTurn,
 }
 
-fn check_win_condition(board: Board, tokens: &BiMap<Uuid, BoardCell>) -> Option<Uuid> {
+// Some(None) = Tie
+// Some(UUID) = Winner is UUID
+// None = No Winner or Tie yet
+fn check_win_condition(board: Board, tokens: &BiMap<Uuid, BoardCell>) -> Option<Option<Uuid>> {
     // check row victory
     for row in &board {
         if row[0] == Some(BoardCell::X)
             && row[1] == Some(BoardCell::X)
             && row[2] == Some(BoardCell::X)
         {
-            return Some(*tokens.get_by_right(&BoardCell::X).unwrap());
+            return Some(Some(*tokens.get_by_right(&BoardCell::X).unwrap()));
+        }
+    }
+
+    for row in &board {
+        if row[0] == Some(BoardCell::Circle)
+            && row[1] == Some(BoardCell::Circle)
+            && row[2] == Some(BoardCell::Circle)
+        {
+            return Some(Some(*tokens.get_by_right(&BoardCell::Circle).unwrap()));
         }
     }
 
