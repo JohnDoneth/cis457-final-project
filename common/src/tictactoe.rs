@@ -62,27 +62,131 @@ pub enum InvalidAction {
     NotYourTurn,
 }
 
+fn is_board_full(board: &Board) -> bool {
+    let mut found_empty = false;
+
+    for row in board {
+        for col in row {
+            if col.is_none() {
+                found_empty = true;
+            }
+        }
+    }
+
+    !found_empty
+}
+
+fn check_rows(
+    board: &Board,
+    token: BoardCell,
+    tokens: &BiMap<Uuid, BoardCell>,
+) -> Option<Option<Option<Uuid>>> {
+    for col in 0..2 {
+        let mut all_match = true;
+
+        for row in 0..2 {
+            let ref cell = board[row][col];
+
+            if cell.is_none() || cell.unwrap() == token {
+                all_match = false;
+                break;
+            }
+        }
+
+        if all_match {
+            return Some(Some(Some(*tokens.get_by_right(&token).unwrap())));
+        }
+    }
+
+    None
+}
+
+fn check_columns(
+    board: &Board,
+    token: BoardCell,
+    tokens: &BiMap<Uuid, BoardCell>,
+) -> Option<Option<Option<Uuid>>> {
+    for row in 0..2 {
+        let mut all_match = true;
+
+        for col in 0..2 {
+            let ref cell = board[row][col];
+
+            if cell.is_none() || cell.unwrap() == token {
+                all_match = false;
+                break;
+            }
+        }
+
+        if all_match {
+            return Some(Some(Some(*tokens.get_by_right(&token).unwrap())));
+        }
+    }
+
+    None
+}
+
+fn check_match(cells: &[Option<BoardCell>; 3], cell: &BoardCell) -> bool {
+    for i in cells {
+        if *i != Some(*cell) {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn check_diagonal(
+    board: &Board,
+    token: BoardCell,
+    tokens: &BiMap<Uuid, BoardCell>,
+) -> Option<Option<Option<Uuid>>> {
+    let left_down = [board[0][0], board[1][1], board[1][1]];
+
+    if check_match(&left_down, &token) {
+        return Some(Some(Some(*tokens.get_by_right(&token).unwrap())));
+    }
+
+    let right_down = [board[2][0], board[1][1], board[0][2]];
+
+    if check_match(&right_down, &token) {
+        return Some(Some(Some(*tokens.get_by_right(&token).unwrap())));
+    }
+
+    None
+}
+
 // Some(None) = Tie
 // Some(UUID) = Winner is UUID
 // None = No Winner or Tie yet
 fn check_win_condition(board: Board, tokens: &BiMap<Uuid, BoardCell>) -> Option<Option<Uuid>> {
     // check row victory
-    for row in &board {
-        if row[0] == Some(BoardCell::X)
-            && row[1] == Some(BoardCell::X)
-            && row[2] == Some(BoardCell::X)
-        {
-            return Some(Some(*tokens.get_by_right(&BoardCell::X).unwrap()));
-        }
+    if let Some(res) = check_rows(&board, BoardCell::X, tokens) {
+        return res;
     }
 
-    for row in &board {
-        if row[0] == Some(BoardCell::Circle)
-            && row[1] == Some(BoardCell::Circle)
-            && row[2] == Some(BoardCell::Circle)
-        {
-            return Some(Some(*tokens.get_by_right(&BoardCell::Circle).unwrap()));
-        }
+    if let Some(res) = check_rows(&board, BoardCell::Circle, tokens) {
+        return res;
+    }
+
+    if let Some(res) = check_columns(&board, BoardCell::X, tokens) {
+        return res;
+    }
+
+    if let Some(res) = check_columns(&board, BoardCell::Circle, tokens) {
+        return res;
+    }
+
+    if let Some(res) = check_diagonal(&board, BoardCell::X, tokens) {
+        return res;
+    }
+
+    if let Some(res) = check_diagonal(&board, BoardCell::Circle, tokens) {
+        return res;
+    }
+
+    if is_board_full(&board) {
+        return Some(None); // tie
     }
 
     None
@@ -192,15 +296,15 @@ pub fn process_input(input: PlayerAction, state: GameState) -> Result<GameState,
     }
 }
 
-#[test]
+/*#[test]
 fn test_gameplay() {
     let p1 = Uuid::new_v4();
     let p2 = Uuid::new_v4();
 
     let mut s = GameState::WaitingForPlayers { players: vec![] };
 
-    s = process_input(PlayerAction::Join { player: p1 }, s);
-    s = process_input(PlayerAction::Join { player: p2 }, s);
+    s = process_input(PlayerAction::Join { player: p1 }, s).unwrap();
+    s = process_input(PlayerAction::Join { player: p2 }, s).unwrap();
 
     println!("{:?}", s);
 
@@ -210,14 +314,16 @@ fn test_gameplay() {
             position: (0, 0),
         },
         s,
-    );
+    )
+    .unwrap();
     s = process_input(
         PlayerAction::PlaceToken {
             player: p2,
             position: (1, 0),
         },
         s,
-    );
+    )
+    .unwrap();
 
     s = process_input(
         PlayerAction::PlaceToken {
@@ -225,14 +331,16 @@ fn test_gameplay() {
             position: (0, 1),
         },
         s,
-    );
+    )
+    .unwrap();
     s = process_input(
         PlayerAction::PlaceToken {
             player: p2,
             position: (1, 1),
         },
         s,
-    );
+    )
+    .unwrap();
 
     s = process_input(
         PlayerAction::PlaceToken {
@@ -240,14 +348,121 @@ fn test_gameplay() {
             position: (0, 2),
         },
         s,
-    );
+    )
+    .unwrap();
     s = process_input(
         PlayerAction::PlaceToken {
             player: p2,
             position: (1, 2),
         },
         s,
-    );
+    )
+    .unwrap();
 
     println!("{:?}", s);
+}*/
+
+fn assert_winning_move(board: Board, new_pos: (usize, usize)) {
+    let p1 = Uuid::new_v4();
+    let p2 = Uuid::new_v4();
+
+    let mut tokens = BiMap::new();
+    tokens.insert(p1, BoardCell::X);
+    tokens.insert(p2, BoardCell::Circle);
+
+    let mut s = GameState::WaitingForInput {
+        active_player: p1,
+        waiting: p2,
+        tokens,
+        board,
+    };
+
+    let action = PlayerAction::PlaceToken {
+        player: p1,
+        position: new_pos,
+    };
+
+    match process_input(action, s) {
+        Ok(GameState::GameOver { .. }) => { /* ok */ }
+        _ => assert!(false, "game should be over"),
+    }
+}
+
+#[test]
+fn test_win_condition_row2() {
+    assert_winning_move(
+        [
+            [Some(BoardCell::X), Some(BoardCell::X), None],
+            [None, None, None],
+            [None, None, None],
+        ],
+        (0, 2),
+    )
+}
+
+#[test]
+fn test_win_condition_column() {
+    assert_winning_move(
+        [
+            [Some(BoardCell::X), None, None],
+            [Some(BoardCell::X), None, None],
+            [None, None, None],
+        ],
+        (2, 0),
+    )
+}
+
+#[test]
+fn test_win_condition_diagonal1() {
+    assert_winning_move(
+        [
+            [Some(BoardCell::X), None, None],
+            [None, Some(BoardCell::X), None],
+            [None, None, None],
+        ],
+        (2, 2),
+    )
+}
+
+#[test]
+fn test_win_condition_diagonal2() {
+    assert_winning_move(
+        [
+            [None, None, Some(BoardCell::X)],
+            [None, Some(BoardCell::X), None],
+            [None, None, None],
+        ],
+        (2, 0),
+    )
+}
+
+#[test]
+fn test_win_condition_row() {
+    let p1 = Uuid::new_v4();
+    let p2 = Uuid::new_v4();
+
+    let mut tokens = BiMap::new();
+    tokens.insert(p1, BoardCell::X);
+    tokens.insert(p2, BoardCell::Circle);
+
+    let mut s = GameState::WaitingForInput {
+        active_player: p1,
+        waiting: p2,
+        tokens,
+        board: [
+            [Some(BoardCell::X), Some(BoardCell::X), None],
+            [None, None, None],
+            [None, None, None],
+        ],
+    };
+
+    let action = PlayerAction::PlaceToken {
+        player: p1,
+        position: (0, 2),
+    };
+
+    match process_input(action, s) {
+        Ok(GameState::GameOver { .. }) => { /* ok */ }
+        _ => assert!(false),
+    }
 }
