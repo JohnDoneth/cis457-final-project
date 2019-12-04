@@ -118,7 +118,7 @@ impl State for GameBrowser {
                     .constraints([Constraint::Percentage(100)].as_ref())
                     .margin(1)
                     .split(f.size());
-                Table::new(header.into_iter(), rows)
+                Table::new(header.iter(), rows)
                     .header_style(Style::default().fg(Color::Blue))
                     .block(Block::default().borders(Borders::ALL).title("Game List"))
                     .widths(&[

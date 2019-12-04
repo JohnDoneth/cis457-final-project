@@ -7,8 +7,6 @@ extern crate rocket;
 use rocket::State;
 use rocket_contrib::json::{Json, JsonValue};
 
-use serde::{Deserialize, Serialize};
-
 use serde_json::json;
 
 use uuid::Uuid;
@@ -16,7 +14,6 @@ use uuid::Uuid;
 use common::tictactoe::PlayerAction;
 use common::CreateLobbyRequest;
 use common::Game;
-use common::GameType;
 use common::Lobby;
 
 use parking_lot::Mutex;
@@ -112,40 +109,9 @@ fn create_lobby(lobby: Json<CreateLobbyRequest>, state: State<AppState>) -> Json
 }
 
 fn main() {
-    println!(
-        "{}",
-        serde_json::to_string_pretty(&PlayerAction::PlaceToken {
-            player: Uuid::new_v4(),
-            position: (0, 0)
-        })
-        .unwrap()
-    );
-
-    let mut lobbies = HashMap::new();
-
-    lobbies.insert(
-        String::from("lobby1"),
-        Lobby {
-            name: String::from("lobby1"),
-            players: 0,
-            max_players: 2,
-            game: Game::TicTacToe(common::tictactoe::GameState::default()),
-        },
-    );
-
-    lobbies.insert(
-        String::from("lobby2"),
-        Lobby {
-            name: String::from("lobby2"),
-            players: 0,
-            max_players: 2,
-            game: Game::RockPaperScissors,
-        },
-    );
-
     rocket::ignite()
         .manage(AppState {
-            lobbies: Mutex::new(lobbies),
+            lobbies: Mutex::new(HashMap::new()),
         })
         .mount(
             "/",

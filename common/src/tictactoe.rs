@@ -362,6 +362,7 @@ fn test_gameplay() {
     println!("{:?}", s);
 }*/
 
+#[test]
 fn assert_winning_move(board: Board, new_pos: (usize, usize)) {
     let p1 = Uuid::new_v4();
     let p2 = Uuid::new_v4();
@@ -370,7 +371,7 @@ fn assert_winning_move(board: Board, new_pos: (usize, usize)) {
     tokens.insert(p1, BoardCell::X);
     tokens.insert(p2, BoardCell::Circle);
 
-    let mut s = GameState::WaitingForInput {
+    let s = GameState::WaitingForInput {
         active_player: p1,
         waiting: p2,
         tokens,

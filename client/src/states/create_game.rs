@@ -143,7 +143,7 @@ impl State for CreateGame {
                         // try and create it.
                         let url = format!("http://localhost:8000/lobbies");
 
-                        let res = surf::post(url)
+                        let _res = surf::post(url)
                             .body_json(&common::CreateLobbyRequest {
                                 name: self.lobby_name.clone(),
                                 game: common::GameType::TicTacToe,
