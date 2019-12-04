@@ -1,3 +1,5 @@
+type PlayerID = Uuid;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Move {
     Rock,
@@ -7,32 +9,36 @@ pub enum Move {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum PlayerAction {
-    Join { player: Uuid },
+    Join { player: PlayerID },
     Move(Move),
 }
 
 struct HistoryEntry {
-    moves: BiMap<Uuid, Move>,
-    winner: Uuid,
+    moves: BiMap<PlayerID, Move>,
+    winner: PlayerID,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum GameState {
     WaitingForPlayers {
-        players: Vec<Uuid>,
+        /// Players
+        players: Vec<PlayerID>,
     },
     WaitingForInput {
-        // What round we're on.
+        /// Players
+        players: Vec<PlayerID>,
+
+        /// What round we're on.
         round: usize,
 
-        // Either `None` or what the other play has moved.
+        /// Either `None` or what the other play has moved.
         input: Option<Move>,
 
-        // Which player has which token
+        /// Which player has which token
         history: Vec<HistoryEntry>,
     },
     GameOver {
-        winner: Uuid,
+        winner: PlayerID,
         history: Vec<HistoryEntry>,
     },
 }
