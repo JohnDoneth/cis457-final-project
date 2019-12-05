@@ -40,7 +40,7 @@ impl Default for GameState {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum PlayerAction {
     Join {
         player: Uuid,

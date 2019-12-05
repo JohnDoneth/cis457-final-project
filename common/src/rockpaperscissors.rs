@@ -106,7 +106,7 @@ impl GameState {
         }
     }
 
-    fn apply(&self, action: PlayerAction) -> Result<GameState, String> {
+    pub fn apply(&self, action: PlayerAction) -> Result<GameState, String> {
         match self {
             GameState::WaitingForPlayers { players } => match action {
                 PlayerAction::Join { player: new_player } => {
@@ -164,9 +164,6 @@ impl GameState {
                                 winner: round_winner,
                                 moves,
                             });
-
-                            //println!("{:?}", self.score(*p1, &history));
-                            //println!("{:?}", self.score(p2, &history));
 
                             if self.score(*p1, &history) == 2 || self.score(p2, &history) == 2 {
                                 let winner = if self.score(*p1, &history) == 2 {

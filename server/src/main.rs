@@ -19,6 +19,7 @@ use common::Lobby;
 use parking_lot::Mutex;
 use std::collections::HashMap;
 
+use common::Action;
 use common::JoinResponse;
 
 struct AppState {
@@ -35,32 +36,59 @@ fn list_games(state: State<AppState>) -> Json<HashMap<String, Lobby>> {
 fn join_game(lobby: String, state: State<AppState>) -> JsonValue {
     let player = Uuid::new_v4();
 
-    let val = perform_action(lobby.clone(), Json(PlayerAction::Join { player }), state);
+    unimplemented!("refactor this");
+    //let val = perform_action(lobby.clone(), Json(PlayerAction::Join { player }), state);
+
+    if let Some(lobby) = state.lobbies.lock().get_mut(&lobby) {
+    } else {
+        return;
+    }
 
     if val.get("error").is_some() {
         return val;
-    } /*else {
-          state.lobbies.lock().get_mut(&lobby).unwrap().players += 1;
-      }*/
+    }
 
     JsonValue(serde_json::to_value(JoinResponse { player }).unwrap())
 }
 
 /// Join the game, get a player identifier UUID
 #[post("/lobbies/<lobby>/action", data = "<body>")]
-fn perform_action(lobby: String, body: Json<PlayerAction>, state: State<AppState>) -> JsonValue {
+fn perform_action(lobby: String, body: Json<Action>, state: State<AppState>) -> JsonValue {
     let res = match state.lobbies.lock().get_mut(&lobby) {
         Some(lobby) => {
             let new_state = match lobby.game.clone() {
-                Game::TicTacToe(state) => match common::tictactoe::process_input(body.0, state) {
-                    Ok(new_state) => Game::TicTacToe(new_state),
-                    Err(e) => {
+                Game::TicTacToe(state) => {
+                    if let Action::TicTacToe(action) = body.0 {
+                        match common::tictactoe::process_input(action, state) {
+                            Ok(new_state) => Game::TicTacToe(new_state),
+                            Err(e) => {
+                                return JsonValue(json!({
+                                    "error": serde_json::to_value(e).unwrap()
+                                }))
+                            }
+                        }
+                    } else {
                         return JsonValue(json!({
-                            "error": serde_json::to_value(e).unwrap()
-                        }))
+                            "error": "invalid game type"
+                        }));
                     }
-                },
-                Game::RockPaperScissors => unimplemented!(),
+                }
+                Game::RockPaperScissors(state) => {
+                    if let Action::RockPaperScissors(action) = body.0 {
+                        match state.apply(action) {
+                            Ok(new_state) => Game::RockPaperScissors(new_state),
+                            Err(e) => {
+                                return JsonValue(json!({
+                                    "error": serde_json::to_value(e).unwrap()
+                                }))
+                            }
+                        }
+                    } else {
+                        return JsonValue(json!({
+                            "error": "invalid game type"
+                        }));
+                    }
+                }
             };
 
             lobby.game = new_state;
