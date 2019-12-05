@@ -66,7 +66,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             state_manager.on_event(event).await;
         }
-        
     }
 
     Ok(())

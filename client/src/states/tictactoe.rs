@@ -103,13 +103,11 @@ impl TicTacToe {
                         } else {
                             self.status = format!("The game is over, you've lost.");
                         }
-                    },
+                    }
                     None => {
                         self.status = format!("The game is over, it was a tie.");
                     }
                 }
-
-                
             }
         }
     }

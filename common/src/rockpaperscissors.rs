@@ -80,6 +80,32 @@ fn rock_paper_scissors(
 }
 
 impl GameState {
+    fn score(&self, player: PlayerID, history: &Vec<HistoryEntry>) -> usize {
+        let mut wins = 0;
+
+        match self {
+            GameState::WaitingForPlayers { .. } => 0,
+            GameState::WaitingForInput { .. } => {
+                for event in history {
+                    if event.winner == Some(player) {
+                        wins += 1;
+                    }
+                }
+
+                wins
+            }
+            GameState::GameOver { .. } => {
+                for event in history {
+                    if event.winner == Some(player) {
+                        wins += 1;
+                    }
+                }
+
+                wins
+            }
+        }
+    }
+
     fn apply(&self, action: PlayerAction) -> Result<GameState, String> {
         match self {
             GameState::WaitingForPlayers { players } => match action {
@@ -139,12 +165,25 @@ impl GameState {
                                 moves,
                             });
 
-                            Ok(GameState::WaitingForInput {
-                                players: players.clone(),
-                                round: round + 1,
-                                input: None,
-                                history,
-                            })
+                            //println!("{:?}", self.score(*p1, &history));
+                            //println!("{:?}", self.score(p2, &history));
+
+                            if self.score(*p1, &history) == 2 || self.score(p2, &history) == 2 {
+                                let winner = if self.score(*p1, &history) == 2 {
+                                    *p1
+                                } else {
+                                    p2
+                                };
+
+                                Ok(GameState::GameOver { winner, history })
+                            } else {
+                                Ok(GameState::WaitingForInput {
+                                    players: players.clone(),
+                                    round: round + 1,
+                                    input: None,
+                                    history,
+                                })
+                            }
                         }
                     }
                 }
@@ -181,6 +220,8 @@ fn test_history() {
         })
         .unwrap();
 
+    //println!("{:#?}", state);
+
     state = state
         .apply(PlayerAction::Move {
             player: p1,
@@ -188,12 +229,16 @@ fn test_history() {
         })
         .unwrap();
 
+    //println!("{:#?}", state);
+
     state = state
         .apply(PlayerAction::Move {
             player: p2,
             action: Move::Scissors,
         })
         .unwrap();
+
+    println!("{:#?}", state);
 
     match state {
         GameState::GameOver { winner, history } => {
