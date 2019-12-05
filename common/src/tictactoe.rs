@@ -362,7 +362,6 @@ fn test_gameplay() {
     println!("{:?}", s);
 }*/
 
-#[test]
 fn assert_winning_move(board: Board, new_pos: (usize, usize)) {
     let p1 = Uuid::new_v4();
     let p2 = Uuid::new_v4();

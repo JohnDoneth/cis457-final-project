@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-//pub mod rockpaperscissors;
+pub mod rockpaperscissors;
 pub mod tictactoe;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
