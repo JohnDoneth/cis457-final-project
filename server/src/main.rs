@@ -11,7 +11,6 @@ use serde_json::json;
 
 use uuid::Uuid;
 
-use common::tictactoe::PlayerAction;
 use common::CreateLobbyRequest;
 use common::Game;
 use common::Lobby;
@@ -20,7 +19,9 @@ use parking_lot::Mutex;
 use std::collections::HashMap;
 
 use common::Action;
+use common::GameType;
 use common::JoinResponse;
+use common::{rockpaperscissors, tictactoe};
 
 struct AppState {
     lobbies: Mutex<HashMap<String, Lobby>>,
@@ -36,13 +37,31 @@ fn list_games(state: State<AppState>) -> Json<HashMap<String, Lobby>> {
 fn join_game(lobby: String, state: State<AppState>) -> JsonValue {
     let player = Uuid::new_v4();
 
-    unimplemented!("refactor this");
-    //let val = perform_action(lobby.clone(), Json(PlayerAction::Join { player }), state);
+    let lobby: Option<Lobby> = {
+        let lock = state.lobbies.lock();
+        lock.get(&lobby).map(|x| x.clone())
+    };
 
-    if let Some(lobby) = state.lobbies.lock().get_mut(&lobby) {
+    let val = if let Some(lobby) = lobby {
+        match lobby.game_type {
+            GameType::TicTacToe => perform_action(
+                lobby.name.clone(),
+                Json(Action::TicTacToe(tictactoe::PlayerAction::Join { player })),
+                state,
+            ),
+            GameType::RockPaperScissors => perform_action(
+                lobby.name.clone(),
+                Json(Action::RockPaperScissors(
+                    rockpaperscissors::PlayerAction::Join { player },
+                )),
+                state,
+            ),
+        }
     } else {
-        return;
-    }
+        return JsonValue(json!({
+            "error": "lobby not found"
+        }));
+    };
 
     if val.get("error").is_some() {
         return val;
@@ -129,7 +148,8 @@ fn create_lobby(lobby: Json<CreateLobbyRequest>, state: State<AppState>) -> Json
             name: lobby.0.name.clone(),
             players: 0,
             max_players: 2,
-            game: Game::from(lobby.0.game),
+            game: Game::from(lobby.0.game.clone()),
+            game_type: lobby.0.game.clone(),
         },
     );
 
@@ -137,9 +157,22 @@ fn create_lobby(lobby: Json<CreateLobbyRequest>, state: State<AppState>) -> Json
 }
 
 fn main() {
+    let mut map = HashMap::new();
+
+    map.insert(
+        String::from("blah"),
+        Lobby {
+            name: String::from("blah"),
+            players: 0,
+            max_players: 2,
+            game_type: GameType::RockPaperScissors,
+            game: Game::RockPaperScissors(rockpaperscissors::GameState::default()),
+        },
+    );
+
     rocket::ignite()
         .manage(AppState {
-            lobbies: Mutex::new(HashMap::new()),
+            lobbies: Mutex::new(map),
         })
         .mount(
             "/",

@@ -37,6 +37,7 @@ pub struct Lobby {
     pub name: String,
     pub players: usize,
     pub max_players: usize,
+    pub game_type: GameType,
     pub game: Game,
 }
 

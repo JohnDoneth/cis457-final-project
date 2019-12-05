@@ -18,51 +18,14 @@ use tui::widgets::{Block, Borders, Row, Table, Widget};
 use common::Lobby;
 
 pub struct GameBrowser {
-    items: Vec<Vec<String>>,
+    items: Vec<Lobby>,
     selected: usize,
 }
 
 impl GameBrowser {
     pub fn new() -> Self {
         Self {
-            items: vec![
-                vec![
-                    String::from("Cool Kids Only"),
-                    String::from("127.0.0.1"),
-                    String::from("Rock Paper Scissors"),
-                    String::from("(0/2)"),
-                ],
-                vec![
-                    String::from("Cool Kids Only"),
-                    String::from("127.0.0.1"),
-                    String::from("Rock Paper Scissors"),
-                    String::from("(0/2)"),
-                ],
-                vec![
-                    String::from("Cool Kids Only"),
-                    String::from("127.0.0.1"),
-                    String::from("Rock Paper Scissors"),
-                    String::from("(1/2)"),
-                ],
-                vec![
-                    String::from("Cool Kids Only"),
-                    String::from("127.0.0.1"),
-                    String::from("Tic Tac Toe"),
-                    String::from("(0/2)"),
-                ],
-                vec![
-                    String::from("Cool Kids Only"),
-                    String::from("127.0.0.1"),
-                    String::from("Tic Tac Toe"),
-                    String::from("(0/2)"),
-                ],
-                vec![
-                    String::from("Cool Kids Only"),
-                    String::from("127.0.0.1"),
-                    String::from("Tic Tac Toe"),
-                    String::from("(0/2)"),
-                ],
-            ],
+            items: vec![],
             selected: 0,
         }
     }
@@ -76,26 +39,37 @@ impl State for GameBrowser {
     async fn on_update(&mut self) {}
 
     async fn on_enter(&mut self) {
-        // fetch games
-        let lobbies: HashMap<String, Lobby> = surf::get("http://localhost:8000/lobbies")
+
+        /*
+        let lobbies: Result<HashMap<String, Lobby>, _> = surf::get("http://localhost:8000/lobbies")
             .await
             .unwrap()
             .body_json()
-            .await
-            .unwrap();
+            .await;
+        */
 
-        //println!("body = {:?}", lobbies);
+        // fetch games
+        let lobbies: Result<HashMap<String, Lobby>, _> = surf::get("http://localhost:8000/lobbies")
+            .await
+            .unwrap()
+            .body_json().await;
+
+        println!("{:?}", lobbies);
 
         self.items.clear();
 
-        for (_, lobby) in lobbies {
-            self.items.push(vec![
+        //for (_, lobby) in lobbies {
+            //self.items.push(lobby);
+        //}
+
+        /*
+        vec![
                 format!("{}", lobby.name),
                 format!("{}", "127.0.0.1"),
                 format!("{}", "TicTacToe"), // #TODO!
                 format!("({}/{})", lobby.players, lobby.max_players),
-            ])
-        }
+            ]
+            */
     }
 
     fn render(&mut self, terminal: &mut Terminal<Backend>) {
@@ -107,10 +81,13 @@ impl State for GameBrowser {
                 let normal_style = Style::default().fg(Color::White);
                 let header = ["Lobby Name", "Server IP", "Game Type", "Players"];
                 let rows = self.items.iter().enumerate().map(|(i, item)| {
+
+                    let data = vec![item.name.clone()];
+
                     if i == self.selected {
-                        Row::StyledData(item.into_iter(), selected_style)
+                        Row::StyledData(data.into_iter(), selected_style)
                     } else {
-                        Row::StyledData(item.into_iter(), normal_style)
+                        Row::StyledData(data.into_iter(), normal_style)
                     }
                 });
 
@@ -151,9 +128,9 @@ impl State for GameBrowser {
                 }
                 Key::Char('\n') => {
                     if !self.items.is_empty() {
-                        let lobby = &self.items[self.selected][0];
+                        let lobby = &self.items[self.selected];
 
-                        let url = format!("http://localhost:8000/lobbies/{}/join", lobby);
+                        let url = format!("http://localhost:8000/lobbies/{}/join", lobby.name);
 
                         let res: Result<common::JoinResponse, _> =
                             surf::post(url).await.unwrap().body_json().await;
@@ -161,7 +138,7 @@ impl State for GameBrowser {
                         if let Ok(res) = res {
                             use crate::states::TicTacToe;
 
-                            return Action::PushState(Box::new(TicTacToe::new(res.player, lobby)));
+                            return Action::PushState(Box::new(TicTacToe::new(res.player, &lobby.name)));
                         }
                     }
                 }
