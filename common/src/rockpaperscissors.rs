@@ -153,6 +153,10 @@ impl GameState {
                             let p2 = player;
                             let p2move = action;
 
+                            if *p1 == p2 {
+                                return Ok(self.clone()); // #TODO Error handling here
+                            }
+
                             let round_winner = rock_paper_scissors(p1, p1move, &p2, &p2move);
 
                             let mut moves: BiMap<Uuid, Move> = BiMap::new();

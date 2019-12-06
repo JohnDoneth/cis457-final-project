@@ -100,7 +100,7 @@ impl State for MainMenu {
                         return Action::PushState(Box::new(CreateGame::new()));
                     }
                     if self.selected == 1 {
-                        return Action::PushState(Box::new(GameBrowser::new()));
+                        return Action::PushState(Box::new(GameBrowser::new(&self.address)));
                     }
                 }
                 _ => {}

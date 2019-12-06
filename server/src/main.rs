@@ -42,7 +42,7 @@ fn join_game(lobby: String, state: State<AppState>) -> JsonValue {
         lock.get(&lobby).map(|x| x.clone())
     };
 
-    let val = if let Some(lobby) = lobby {
+    let val = if let Some(lobby) = lobby.clone() {
         match lobby.game_type {
             GameType::TicTacToe => perform_action(
                 lobby.name.clone(),
@@ -67,7 +67,13 @@ fn join_game(lobby: String, state: State<AppState>) -> JsonValue {
         return val;
     }
 
-    JsonValue(serde_json::to_value(JoinResponse { player }).unwrap())
+    JsonValue(
+        serde_json::to_value(JoinResponse {
+            player,
+            game_type: lobby.unwrap().game_type,
+        })
+        .unwrap(),
+    )
 }
 
 /// Join the game, get a player identifier UUID
@@ -93,16 +99,20 @@ fn perform_action(lobby: String, body: Json<Action>, state: State<AppState>) -> 
                     }
                 }
                 Game::RockPaperScissors(state) => {
+                    println!("{:?}", body);
+
                     if let Action::RockPaperScissors(action) = body.0 {
                         match state.apply(action) {
                             Ok(new_state) => Game::RockPaperScissors(new_state),
                             Err(e) => {
+                                println!("err: {:?}", e);
                                 return JsonValue(json!({
                                     "error": serde_json::to_value(e).unwrap()
-                                }))
+                                }));
                             }
                         }
                     } else {
+                        println!("err: invalid game type");
                         return JsonValue(json!({
                             "error": "invalid game type"
                         }));
@@ -159,7 +169,7 @@ fn create_lobby(lobby: Json<CreateLobbyRequest>, state: State<AppState>) -> Json
 fn main() {
     let mut map = HashMap::new();
 
-    map.insert(
+    /*map.insert(
         String::from("blah"),
         Lobby {
             name: String::from("blah"),
@@ -168,7 +178,7 @@ fn main() {
             game_type: GameType::RockPaperScissors,
             game: Game::RockPaperScissors(rockpaperscissors::GameState::default()),
         },
-    );
+    );*/
 
     rocket::ignite()
         .manage(AppState {

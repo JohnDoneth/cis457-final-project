@@ -15,18 +15,21 @@ use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::widgets::{Block, Borders, Row, Table, Widget};
 
+use common::GameType;
 use common::Lobby;
 
 pub struct GameBrowser {
     items: Vec<Lobby>,
     selected: usize,
+    server_address: String,
 }
 
 impl GameBrowser {
-    pub fn new() -> Self {
+    pub fn new(server_address: &str) -> Self {
         Self {
             items: vec![],
             selected: 0,
+            server_address: server_address.into(),
         }
     }
 }
@@ -39,28 +42,27 @@ impl State for GameBrowser {
     async fn on_update(&mut self) {}
 
     async fn on_enter(&mut self) {
-
-        /*
-        let lobbies: Result<HashMap<String, Lobby>, _> = surf::get("http://localhost:8000/lobbies")
-            .await
-            .unwrap()
-            .body_json()
-            .await;
-        */
+        let lobbies: HashMap<String, Lobby> =
+            surf::get(format!("http://{}/lobbies", self.server_address))
+                .await
+                .unwrap()
+                .body_json()
+                .await
+                .unwrap();
 
         // fetch games
-        let lobbies: Result<HashMap<String, Lobby>, _> = surf::get("http://localhost:8000/lobbies")
-            .await
-            .unwrap()
-            .body_json().await;
+        /*let lobbies: Result<HashMap<String, Lobby>, _> = surf::get("http://localhost:8000/lobbies")
+        .await
+        .unwrap()
+        .body_json().await;*/
 
-        println!("{:?}", lobbies);
+        //println!("{:?}", lobbies);
 
         self.items.clear();
 
-        //for (_, lobby) in lobbies {
-            //self.items.push(lobby);
-        //}
+        for (_, lobby) in lobbies {
+            self.items.push(lobby);
+        }
 
         /*
         vec![
@@ -80,9 +82,13 @@ impl State for GameBrowser {
                     .modifier(Modifier::UNDERLINED);
                 let normal_style = Style::default().fg(Color::White);
                 let header = ["Lobby Name", "Server IP", "Game Type", "Players"];
-                let rows = self.items.iter().enumerate().map(|(i, item)| {
-
-                    let data = vec![item.name.clone()];
+                let rows = self.items.iter().enumerate().map(|(i, lobby)| {
+                    let data = vec![
+                        format!("{}", lobby.name),
+                        format!("{}", "127.0.0.1"),
+                        format!("{:?}", lobby.game_type), // #TODO!
+                        format!("({}/{})", lobby.players, lobby.max_players),
+                    ];
 
                     if i == self.selected {
                         Row::StyledData(data.into_iter(), selected_style)
@@ -130,15 +136,29 @@ impl State for GameBrowser {
                     if !self.items.is_empty() {
                         let lobby = &self.items[self.selected];
 
-                        let url = format!("http://localhost:8000/lobbies/{}/join", lobby.name);
+                        let url =
+                            format!("http://{}/lobbies/{}/join", self.server_address, lobby.name);
 
                         let res: Result<common::JoinResponse, _> =
                             surf::post(url).await.unwrap().body_json().await;
 
                         if let Ok(res) = res {
-                            use crate::states::TicTacToe;
+                            use crate::states::{RockPaperScissors, TicTacToe};
 
-                            return Action::PushState(Box::new(TicTacToe::new(res.player, &lobby.name)));
+                            match res.game_type {
+                                GameType::TicTacToe => {
+                                    return Action::PushState(Box::new(TicTacToe::new(
+                                        res.player,
+                                        &lobby.name,
+                                    )));
+                                }
+                                GameType::RockPaperScissors => {
+                                    return Action::PushState(Box::new(RockPaperScissors::new(
+                                        res.player,
+                                        &lobby.name,
+                                    )));
+                                }
+                            }
                         }
                     }
                 }

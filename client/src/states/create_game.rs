@@ -15,7 +15,7 @@ use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
 use tui::widgets::{Block, Borders, Paragraph, Row, Table, Tabs, Text, Widget};
 
-use common::Lobby;
+use common::{GameType, Lobby};
 
 const SELECTION_MAX: usize = 3;
 
@@ -143,10 +143,16 @@ impl State for CreateGame {
                         // try and create it.
                         let url = format!("http://localhost:8000/lobbies");
 
+                        let game_type = if self.game_type == 0 {
+                            GameType::TicTacToe
+                        } else {
+                            GameType::RockPaperScissors
+                        };
+
                         let _res = surf::post(url)
                             .body_json(&common::CreateLobbyRequest {
                                 name: self.lobby_name.clone(),
-                                game: common::GameType::TicTacToe,
+                                game: game_type,
                             })
                             .unwrap()
                             .await
@@ -158,12 +164,22 @@ impl State for CreateGame {
                             surf::post(url).await.unwrap().body_json().await;
 
                         if let Ok(res) = res {
-                            use crate::states::TicTacToe;
+                            use crate::states::{RockPaperScissors, TicTacToe};
 
-                            return Action::PushState(Box::new(TicTacToe::new(
-                                res.player,
-                                &self.lobby_name,
-                            )));
+                            match res.game_type {
+                                GameType::TicTacToe => {
+                                    return Action::PushState(Box::new(TicTacToe::new(
+                                        res.player,
+                                        &self.lobby_name,
+                                    )));
+                                }
+                                GameType::RockPaperScissors => {
+                                    return Action::PushState(Box::new(RockPaperScissors::new(
+                                        res.player,
+                                        &self.lobby_name,
+                                    )));
+                                }
+                            }
                         }
                     }
                 }

@@ -44,6 +44,7 @@ pub struct Lobby {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct JoinResponse {
     pub player: Uuid,
+    pub game_type: GameType,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CreateLobbyRequest {
