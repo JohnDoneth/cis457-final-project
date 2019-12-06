@@ -42,8 +42,11 @@ impl State for GameBrowser {
     async fn on_update(&mut self) {}
 
     async fn on_enter(&mut self) {
+
+        let url = format!("http://{}/lobbies", self.server_address);
+
         let lobbies: HashMap<String, Lobby> =
-            surf::get(format!("http://{}/lobbies", self.server_address))
+            surf::get(url)
                 .await
                 .unwrap()
                 .body_json()
